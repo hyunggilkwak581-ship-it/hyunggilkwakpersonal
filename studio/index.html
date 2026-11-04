@@ -50,10 +50,12 @@ a{color:inherit}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-
     <button class="btn" id="load-project">导入备份</button>
     <button class="btn" id="reset">恢复当前网站</button>
     <button class="btn primary" id="download-html">下载网站文件</button>
+    <button class="btn" id="copy-html">复制页面代码</button>
+    <a href="https://github.com/hyunggilkwak581-ship-it/hyunggilkwakpersonal/edit/main/index.html" target="_blank" rel="noopener">GitHub 发布 ↗</a>
     <a href="../" target="_blank" rel="noopener">公开主页 ↗</a>
   </div>
 </header>
-<div class="tip">编辑不会自动改变公开网站。先“保存草稿”；满意后“下载网站文件”，再替换 GitHub 仓库根目录的 index.html。无需密钥或付费。</div>
+<div class="tip">编辑不会自动改变公开网站。先保存草稿；满意后点“复制页面代码”，在 GitHub 发布页面替换 index.html 并提交，或者下载文件让我帮你发布。无需密钥或付费。</div>
 <div class="workbench">
   <aside class="sidebar left"><h2>拖拽添加组件</h2><div id="blocks"></div><div class="aside-note">选中组件后可直接拖动位置。双击文字修改内容；双击图片可更换图片地址。讲义与图录可添加链接。</div></aside>
   <main class="canvas"><div id="gjs" aria-label="网站可视化画布"></div></main>
@@ -167,7 +169,8 @@ async function start(){
     const safeTitle=pageTitle.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
     return '<!doctype html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>'+safeTitle+'</title>\n<link rel="stylesheet" href="./styles.css">\n<style id="studio-overrides">\n'+css+'\n</style>\n</head>\n<body>\n'+body+'\n</body>\n</html>\n';
   }
-  byId('download-html').onclick=()=>{download(exportHtml(),'index.html','text/html;charset=utf-8');status('已下载 index.html。打开 GitHub 仓库，把根目录的同名文件替换后提交即可发布。');};
+  byId('download-html').onclick=()=>{download(exportHtml(),'index.html','text/html;charset=utf-8');status('已下载 index.html。可将文件发给 ChatGPT 帮你发布，也可自行更新 GitHub。');};
+  byId('copy-html').onclick=async()=>{try{await navigator.clipboard.writeText(exportHtml());status('已复制完整页面代码。打开 GitHub 发布，按 Ctrl+A / Ctrl+V 替换内容并提交。');}catch(error){status('无法复制，请使用“下载网站文件”。');}};
   for(const button of document.querySelectorAll('[data-panel]')){
     button.onclick=()=>{
       for(const b of document.querySelectorAll('[data-panel]'))b.classList.toggle('active',b===button);
