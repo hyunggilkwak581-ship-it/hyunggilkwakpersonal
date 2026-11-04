@@ -41,3 +41,7 @@
 技术参考：
 - <https://silex.me/>
 - <https://grapesjs.com/docs/>
+
+## 重新发布说明
+
+当 GitHub Pages 使用 GitHub Actions 作为 Source 时，即使之前点击了 Unpublish site，也不需要删除仓库或重新创建 Pages。向 `main` 提交一次更新便会触发 `.github/workflows/publish.yml`，该工作流运行成功后网站重新上线。若 GitHub 提示存在运行中的旧部署，先检查 Actions 页的运行记录，不要重复无意义的提交。
