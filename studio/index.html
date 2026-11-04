@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>可视化编辑台 — Hyunggil Kwak</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/grapesjs@0.23.6/dist/css/grapes.min.css">
+<style>
+:root { color-scheme:light; --ink:#252824; --muted:#6f766e; --line:#dbdfd8; --accent:#516654; --paper:#fafbf8; }
+*{box-sizing:border-box}
+body{margin:0;color:var(--ink);font:13px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;background:var(--paper)}
+a{color:inherit}button{font:inherit;cursor:pointer}button:focus-visible,a:focus-visible{outline:2px solid #648b6c;outline-offset:3px}
+.top{min-height:64px;display:flex;justify-content:space-between;align-items:center;gap:20px;padding:10px 17px;background:#fff;border-bottom:1px solid var(--line)}
+.brand strong{font:600 14px/1.3 Georgia,serif;letter-spacing:.035em}.brand small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.toolbar{display:flex;flex-wrap:wrap;gap:7px;align-items:center}.btn,.toolbar a{border:1px solid #d8dcd7;border-radius:6px;padding:7px 10px;text-decoration:none;background:#fff;color:#343a33;white-space:nowrap}
+.btn:hover,.toolbar a:hover{background:#f2f5f0}.btn.primary{background:#435b49;color:white;border-color:#435b49}.btn.primary:hover{background:#304536}
+.tip{background:#edf2ea;border-bottom:1px solid #dfe6dc;padding:9px 18px;color:#485a49;font-size:12px}
+.workbench{display:grid;grid-template-columns:206px minmax(0,1fr) 285px;height:calc(100vh - 145px);min-height:560px}
+.sidebar{min-height:0;overflow:auto;background:#fff}.left{border-right:1px solid var(--line)}.right{border-left:1px solid var(--line)}
+.sidebar h2{font-size:12px;letter-spacing:.08em;margin:0;padding:14px 13px;border-bottom:1px solid var(--line)}
+.aside-note{font-size:12px;color:var(--muted);padding:12px 13px;line-height:1.75;border-top:1px solid var(--line)}
+.canvas{min-width:0;min-height:0;background:#e9ebe7}#gjs{height:100%;border:0}
+.switch{display:flex;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:4}
+.switch button{flex:1;border:0;border-bottom:2px solid transparent;padding:13px 4px;background:#fff;color:#667064}
+.switch button.active{border-bottom-color:#52775a;color:#2d4230;font-weight:600}.panel{padding:0 6px 15px}.panel[hidden]{display:none}
+#styles,#layers,#traits{min-height:160px}.panel-label{padding:12px;font-size:11px;letter-spacing:.08em;color:var(--muted)}
+.footer{height:35px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 15px;background:#fff;color:var(--muted);font-size:11px;gap:8px}
+.gjs-one-bg{background:#fff}.gjs-two-color{color:#475048}.gjs-three-bg{background:#eef1ec}.gjs-four-color,.gjs-four-color-h:hover{color:#48684e}
+.gjs-blocks-c{padding:8px}.gjs-block{width:calc(50% - 6px);min-height:70px;padding:8px;border:1px solid #e0e4df;border-radius:6px;box-shadow:none;color:#38463a;background:#f8faf7}.gjs-block-label{font-size:11px}.gjs-block:hover{box-shadow:none;border-color:#8aab90}
+.gjs-category-title,.gjs-sm-sector-title,.gjs-layer-title{background:#f4f6f3!important;color:#3a473d!important;border-bottom:1px solid #e5e8e4!important}
+.gjs-sm-properties{color:#3a483d}.gjs-sm-property .gjs-field{background:#f5f6f4;color:#333;border:1px solid #e0e4dd}
+.gjs-editor{font-family:Arial,sans-serif}.gjs-cv-canvas{background:#e9ebe7}
+#loading{position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;background:#fafbf8;color:#546454;font-size:14px;padding:24px;text-align:center}
+@media(max-width:1000px){.workbench{grid-template-columns:170px minmax(0,1fr) 228px}.toolbar{gap:4px}.btn,.toolbar a{padding:6px 7px}}
+@media(max-width:700px){.top{display:block}.toolbar{margin-top:9px}.workbench{grid-template-columns:125px minmax(0,1fr) 175px;height:calc(100vh - 215px)}.gjs-block{width:100%}.brand small{display:none}.footer{height:auto;min-height:35px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><strong>Hyunggil Kwak · 视觉编辑台</strong><small>拖动组件、双击文字、选中元素后在右侧调整样式</small></div>
+  <div class="toolbar">
+    <button class="btn" id="undo" title="撤销">↶ 撤销</button>
+    <button class="btn" id="redo" title="重做">↷ 重做</button>
+    <button class="btn" id="desktop">桌面</button>
+    <button class="btn" id="mobile">手机</button>
+    <button class="btn" id="preview">预览</button>
+    <button class="btn" id="save">保存草稿</button>
+    <button class="btn" id="download-project">备份项目</button>
+    <button class="btn" id="load-project">导入备份</button>
+    <button class="btn" id="reset">恢复当前网站</button>
+    <button class="btn primary" id="download-html">下载网站文件</button>
+    <a href="../" target="_blank" rel="noopener">公开主页 ↗</a>
+  </div>
+</header>
+<div class="tip">编辑不会自动改变公开网站。先“保存草稿”；满意后“下载网站文件”，再替换 GitHub 仓库根目录的 index.html。无需密钥或付费。</div>
+<div class="workbench">
+  <aside class="sidebar left"><h2>拖拽添加组件</h2><div id="blocks"></div><div class="aside-note">选中组件后可直接拖动位置。双击文字修改内容；双击图片可更换图片地址。讲义与图录可添加链接。</div></aside>
+  <main class="canvas"><div id="gjs" aria-label="网站可视化画布"></div></main>
+  <aside class="sidebar right">
+    <div class="switch">
+      <button class="active" data-panel="style-panel">样式</button>
+      <button data-panel="layers-panel">图层</button>
+      <button data-panel="traits-panel">属性</button>
+    </div>
+    <section class="panel" id="style-panel"><div class="panel-label">选中一个元素来调整字体、间距、尺寸等</div><div id="selectors"></div><div id="styles"></div></section>
+    <section class="panel" id="layers-panel" hidden><div class="panel-label">拖动图层调整排列顺序</div><div id="layers"></div></section>
+    <section class="panel" id="traits-panel" hidden><div class="panel-label">链接网址、图片地址及 HTML 属性</div><div id="traits"></div></section>
+  </aside>
+</div>
+<footer class="footer"><span id="status" role="status">正在加载网站…</span><span>草稿仅保存在当前浏览器 · 发布需 GitHub 提交</span></footer>
+<input type="file" id="project-file" accept="application/json,.json" hidden>
+<div id="loading">正在加载视觉编辑器与现有主页…</div>
+<script src="../content.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/grapesjs@0.23.6/dist/grapes.min.js"></script>
+<script>
+(function(){
+'use strict';
+const byId = id => document.getElementById(id);
+const status = message => { byId('status').textContent = message; };
+const hideLoading = () => { const el=byId('loading'); if(el)el.remove(); };
+const sanitizeUrl = value => {const s=String(value||'').trim();return /^https:\/\//i.test(s)||/^(?!\/)(?!.*\.\.)[\w./%() -]+$/.test(s)?s:'';};
+function makeItem(item, lecture) {
+  const article=document.createElement('article');article.className='item';
+  const body=document.createElement('div');
+  const meta=document.createElement('p');meta.className='meta';meta.textContent=item.category||'';
+  const title=document.createElement('h3');title.textContent=item.title||'未命名';
+  const desc=document.createElement('p');desc.textContent=item.description||'';
+  body.append(meta,title,desc);
+  const links=document.createElement('div');links.className='links';
+  for(const ext of (lecture?['pdf','ppt']:['pdf'])){
+    const u=sanitizeUrl(item[ext]);if(!u)continue;
+    const a=document.createElement('a');a.href=u;a.textContent=ext.toUpperCase()+' ↗';a.target='_blank';a.rel='noopener noreferrer';links.append(a);
+  }
+  if(!links.children.length){const el=document.createElement('span');el.className='placeholder';el.textContent='待上传';links.append(el);}
+  article.append(body,links);return article;
+}
+function hydrateSource(doc) {
+  const dynamic=Array.from(doc.querySelectorAll('script[src]')).some(s=>s.getAttribute('src')?.includes('app.js'));
+  if(dynamic && typeof SITE_CONTENT!=='undefined'){
+    for(const [id,key,isLecture] of [['lecture-list','lectures',true],['catalogue-list','catalogues',false]]){
+      const list=doc.getElementById(id);if(!list)continue;
+      list.replaceChildren();for(const item of (SITE_CONTENT[key]||[]))list.append(makeItem(item,isLecture));
+    }
+    const about=doc.getElementById('about-body');if(about)about.textContent=SITE_CONTENT.about||'';
+  }
+  doc.querySelectorAll('script').forEach(el=>el.remove());
+  return doc.body.innerHTML;
+}
+function download(text,name,type){
+  const blob=new Blob([text],{type:type||'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function start(){
+  if(!window.grapesjs)throw new Error('编辑器库未能加载。请确认网络可以访问 cdn.jsdelivr.net，刷新后重试。');
+  const response=await fetch('../index.html',{cache:'no-store'});
+  if(!response.ok)throw new Error('无法读取当前主页（HTTP '+response.status+'）。');
+  const source=new DOMParser().parseFromString(await response.text(),'text/html');
+  const originalBody=hydrateSource(source);
+  const pageTitle=source.title||'Hyunggil Kwak — Lectures & Art';
+  const editor=grapesjs.init({
+    container:'#gjs',height:'100%',fromElement:false,
+    panels:{defaults:[]},
+    storageManager:{type:'local',id:'hyunggilkwakpersonal-visual-v1-',autosave:true,autoload:true,stepsBeforeSave:1},
+    components:originalBody,
+    canvas:{styles:['../styles.css']},
+    blockManager:{appendTo:'#blocks'},
+    layerManager:{appendTo:'#layers'},
+    selectorManager:{appendTo:'#selectors'},
+    traitManager:{appendTo:'#traits'},
+    styleManager:{appendTo:'#styles',sectors:[
+      {name:'字体与文字',open:true,buildProps:['font-family','font-size','font-weight','line-height','letter-spacing','color','text-align','text-decoration']},
+      {name:'位置与尺寸',open:true,buildProps:['display','width','min-height','max-width','margin','padding','flex-direction','justify-content','align-items','gap']},
+      {name:'背景与边框',open:false,buildProps:['background-color','border','border-radius','box-shadow']}
+    ]},
+    deviceManager:{devices:[{name:'桌面',width:''},{name:'手机',width:'375px',widthMedia:'480px'}]},
+    assetManager:{upload:false}
+  });
+  const add=(id,label,html,category)=>editor.BlockManager.add(id,{label,category:category||'基础',content:html});
+  add('paragraph','文字','<p>双击这里编辑文字</p>');
+  add('heading','标题','<h2>新增标题</h2>');
+  add('rule','分隔线','<hr style="border:0;border-top:1px solid #ddd;margin:24px 0">');
+  add('image','图片',{type:'image'},'基础');
+  add('button','链接','<a href="https://example.com" target="_blank" rel="noopener noreferrer" style="display:inline-block;border-bottom:1px solid;padding:5px">打开链接 ↗</a>');
+  add('twocols','两栏排版','<div style="display:flex;gap:20px;flex-wrap:wrap"><div style="flex:1;min-width:180px;padding:15px">左侧内容</div><div style="flex:1;min-width:180px;padding:15px">右侧内容</div></div>','布局');
+  add('lecture','讲义条目','<article class="item"><div><p class="meta">LECTURE NOTES</p><h3>新讲义标题</h3><p>在这里填写简介。</p></div><div class="links"><a href="https://example.com/notes.pdf" target="_blank" rel="noopener noreferrer">PDF ↗</a></div></article>','资料');
+  add('catalogue','图录专题','<article class="item"><div><p class="meta">CATALOGUE</p><h3>书画专题标题</h3><p>在这里填写图录简介。</p></div><div class="links"><a href="https://example.com/catalogue.pdf" target="_blank" rel="noopener noreferrer">PDF ↗</a></div></article>','资料');
+  editor.on('load',()=>{hideLoading();status('编辑器已就绪。选中元素后在右侧更改样式。');});
+  editor.on('update',()=>status('有未发布的修改，已自动保存在此浏览器。'));
+  byId('undo').onclick=()=>editor.UndoManager.undo();
+  byId('redo').onclick=()=>editor.UndoManager.redo();
+  byId('desktop').onclick=()=>editor.setDevice('桌面');
+  byId('mobile').onclick=()=>editor.setDevice('手机');
+  let preview=false;
+  byId('preview').onclick=()=>{preview=!preview;editor.runCommand('core:preview');byId('preview').textContent=preview?'返回编辑':'预览';};
+  byId('save').onclick=async()=>{try{await editor.store();status('草稿已保存在此浏览器。')}catch(err){status('保存失败：'+err.message);}};
+  byId('download-project').onclick=()=>{download(JSON.stringify(editor.getProjectData(),null,2),'hyunggilkwak-studio-project.json','application/json');status('已下载可重新导入的项目备份。');};
+  byId('load-project').onclick=()=>byId('project-file').click();
+  byId('project-file').onchange=async event=>{
+    const file=event.target.files&&event.target.files[0];if(!file)return;
+    if(!confirm('导入项目将替换当前编辑草稿，是否继续？'))return;
+    try{editor.loadProjectData(JSON.parse(await file.text()));await editor.store();status('已导入项目备份。');}catch(err){alert('导入失败：'+err.message)}finally{event.target.value='';}
+  };
+  byId('reset').onclick=async()=>{if(!confirm('确定将本浏览器的草稿重置为目前公开网站内容？请先备份重要修改。'))return;editor.setComponents(originalBody);editor.setStyle('');await editor.store();status('已恢复到目前公开网站的内容。');};
+  function exportHtml(){
+    const css=editor.getCss();const body=editor.getHtml();
+    const safeTitle=pageTitle.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    return '<!doctype html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>'+safeTitle+'</title>\n<link rel="stylesheet" href="./styles.css">\n<style id="studio-overrides">\n'+css+'\n</style>\n</head>\n<body>\n'+body+'\n</body>\n</html>\n';
+  }
+  byId('download-html').onclick=()=>{download(exportHtml(),'index.html','text/html;charset=utf-8');status('已下载 index.html。打开 GitHub 仓库，把根目录的同名文件替换后提交即可发布。');};
+  for(const button of document.querySelectorAll('[data-panel]')){
+    button.onclick=()=>{
+      for(const b of document.querySelectorAll('[data-panel]'))b.classList.toggle('active',b===button);
+      for(const panel of document.querySelectorAll('.panel'))panel.hidden=panel.id!==button.dataset.panel;
+    };
+  }
+  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();editor.store();status('草稿已保存。');}});
+}
+start().catch(error=>{hideLoading();status('启动失败：'+error.message);const message=document.createElement('p');message.style.cssText='padding:24px;color:#8b2626';message.textContent=error.message;byId('gjs').append(message);});
+})();
+</script>
+</body>
+</html>
